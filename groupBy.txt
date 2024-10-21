@@ -1,0 +1,107 @@
+# MongoDB $group Cheat Sheet
+
+## 1. Additional Accumulators
+There are a few more useful accumulators you can add:
+
+- **$first**: Returns the first document from each group according to the sort order.
+```json
+{ $group: { _id: "$customer_id", firstOrder: { $first: "$order_date" } } }
+```
+
+- **$last**: Returns the last document from each group according to the sort order.
+```json
+{ $group: { _id: "$customer_id", lastOrder: { $last: "$order_date" } } }
+```
+
+- **$stdDevPop**: Calculates the population standard deviation of the values.
+```json
+{ $group: { _id: "$customer_id", stdDevAmount: { $stdDevPop: "$amount" } } }
+```
+
+- **$stdDevSamp**: Calculates the sample standard deviation of the values.
+```json
+{ $group: { _id: "$customer_id", stdDevSampleAmount: { $stdDevSamp: "$amount" } } }
+```
+
+- **$mergeObjects**: Merges multiple documents into a single document.
+```json
+{ $group: { _id: "$customer_id", mergedDetails: { $mergeObjects: "$details" } } }
+```
+
+- **$accumulator**: Allows you to define a custom accumulator in the aggregation framework.
+```json
+{ 
+  $group: { 
+    _id: "$customer_id", 
+    customAccum: { 
+      $accumulator: { 
+        init: "function() { return 0; }", 
+        accumulate: "function(state, value) { return state + value; }", 
+        accumulateArgs: [ "$amount" ], 
+        merge: "function(state1, state2) { return state1 + state2; }", 
+        finalize: "function(state) { return state; }", 
+        lang: "js" 
+      }
+    } 
+  }
+}
+```
+
+## 2. Handling Null or Missing Values
+- **$group skips missing values**: If a field is missing or has a null value, it will not be included in the calculations. You might need to handle this explicitly.
+### Example for counting non-null values:
+```json
+{ $group: { _id: "$customer_id", count: { $sum: { $cond: [{ $ne: ["$amount", null] }, 1, 0] } } } }
+```
+
+## 3. Handling Multiple Fields for Grouping
+### Grouping by a computed field (e.g., rounding the price):
+```json
+{ $group: { _id: { roundedPrice: { $round: ["$price", -1] } }, total: { $sum: "$amount" } } }
+```
+
+## 4. $group with $project
+### Example of how $group is combined with $project for transformations after grouping:
+```json
+db.orders.aggregate([
+  { $group: { _id: "$customer_id", totalAmount: { $sum: "$amount" }, avgAmount: { $avg: "$amount" } } },
+  { $project: { customerId: "$_id", totalAmount: 1, avgAmount: 1, _id: 0 } }
+])
+```
+
+## 5. Advanced Grouping Example with Conditions
+### Example demonstrating conditional grouping logic:
+```json
+db.orders.aggregate([
+  { 
+    $group: { 
+      _id: "$customer_id", 
+      totalAmount: { 
+        $sum: { 
+          $cond: [{ $eq: ["$status", "Completed"] }, "$amount", 0] 
+        } 
+      }
+    }
+  }
+])
+```
+
+## 6. Performance Considerations (Deeper)
+- **Partitioning with $match before $group**: Reduce the number of documents processed by placing `$match` before `$group`.
+
+- **Using $bucket or $bucketAuto**: These stages might be useful for certain types of grouping. They divide documents into a specified number of groups, or automatic groupings based on ranges.
+### Example:
+```json
+db.sales.aggregate([
+  {
+    $bucket: {
+      groupBy: "$amount",
+      boundaries: [0, 100, 200, 300],
+      default: "Other",
+      output: { totalAmount: { $sum: "$amount" }, count: { $sum: 1 } }
+    }
+  }
+])
+```
+
+Adding these features and details will help complete your MongoDB `$group` cheat sheet and provide users with a wide range of usage examples and best practices.

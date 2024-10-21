@@ -1,0 +1,35 @@
+$addFields Stage in MongoDB Aggregation
+
+The $addFields stage adds new fields to documents in the aggregation pipeline. It can be used to create new fields or modify existing ones.
+
+1. Basic Syntax
+{ $addFields: { <newField>: <expression>, ... } }
+
+- newField: The name of the new field to add or the existing field to modify.
+- expression: The expression that defines the value of the new or modified field.
+
+2. Example of Using $addFields
+To add a new field called `totalAmount` that is the product of `amount` and `quantity`:
+Example:
+{ $addFields: { totalAmount: { $multiply: ["$amount", "$quantity"] } } }
+
+3. Modifying Existing Fields
+You can also use $addFields to modify existing fields:
+Example:
+{ $addFields: { amount: { $add: ["$amount", 10] } } } // Increases the amount by 10
+
+4. Using $addFields with Other Stages
+The $addFields stage is often used after $match or $lookup to enrich documents. Here’s an example of how it fits into a pipeline:
+Example Pipeline:
+db.orders.aggregate([
+    { $match: { status: "A" } }, // Filter for status A
+    { $addFields: { totalAmount: { $multiply: ["$amount", "$quantity"] } } }, // Add totalAmount field
+    { $project: { customer_id: 1, totalAmount: 1 } } // Project the desired fields
+]);
+
+5. Performance Considerations
+- Pipeline Order: Placing $addFields early in the pipeline can help reduce the amount of data processed in subsequent stages.
+- Expression Complexity: Be mindful of the complexity of expressions used, as they can impact performance.
+
+Conclusion
+The $addFields stage is a versatile tool for enhancing documents in MongoDB aggregation. It allows you to add new fields or modify existing ones, making it easier to work with your data.

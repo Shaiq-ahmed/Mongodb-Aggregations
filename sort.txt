@@ -1,0 +1,39 @@
+$sort Stage in MongoDB Aggregation
+
+The $sort stage sorts the documents in the aggregation pipeline based on specified field(s).
+
+1. Basic Syntax
+{ $sort: { <field1>: <sortOrder>, <field2>: <sortOrder>, ... } }
+
+- field1, field2, ...: The fields to sort by.
+- sortOrder: The order in which to sort the documents. Use 1 for ascending order and -1 for descending order.
+
+2. Example of Sorting
+To sort documents by a single field in ascending order:
+Example:
+{ $sort: { amount: 1 } } // Sorts by amount in ascending order
+
+To sort documents by a single field in descending order:
+Example:
+{ $sort: { amount: -1 } } // Sorts by amount in descending order
+
+3. Sorting by Multiple Fields
+You can sort by multiple fields by specifying them in the $sort stage.
+Example:
+{ $sort: { customer_id: 1, amount: -1 } } // Sorts by customer_id ascending, then by amount descending
+
+4. Using $sort with Other Stages
+The $sort stage is often used after $group or $match to order the results. Here’s an example of how it fits into a pipeline:
+Example Pipeline:
+db.orders.aggregate([
+    { $match: { status: "A" } }, // Filter for status A
+    { $group: { _id: "$customer_id", totalAmount: { $sum: "$amount" } } }, // Group by customer_id
+    { $sort: { totalAmount: -1 } } // Sort by totalAmount descending
+]);
+
+5. Performance Considerations
+- Indexing: Sorting can be optimized by creating indexes on the fields used in the $sort stage. This can significantly improve performance.
+- Memory Limit: If the result set is large, MongoDB may use temporary files to store the sorted results. You can use the allowDiskUse option to enable this.
+
+Conclusion
+The $sort stage is a powerful tool for ordering documents in MongoDB aggregation. It allows you to sort results based on one or more fields in either ascending or descending order.

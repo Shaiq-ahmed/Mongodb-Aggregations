@@ -1,0 +1,168 @@
+$facet Stage in MongoDB Aggregation
+
+The $facet stage allows you to perform multiple independent aggregations within a single stage. Each aggregation can have its own pipeline, and the results are returned as separate fields in a single document. This enables efficient summarization and analysis of data from the same dataset without needing to run multiple queries.
+
+### 1. Basic Syntax
+{
+  $facet: {
+    <facet1>: [ <pipeline1> ],
+    <facet2>: [ <pipeline2> ],
+    ...
+  }
+}
+
+- **facet1, facet2, ...**: The names of the facets (output fields) that will contain the results of the respective aggregation pipelines.
+- **pipeline1, pipeline2, ...**: The aggregation pipelines for each facet, which can consist of various stages such as `$match`, `$group`, `$sort`, etc.
+
+### 2. Example of Using $facet
+To perform multiple aggregations on the `orders` collection, such as calculating total sales and counting the number of orders:
+Example:
+{
+  $facet: {
+    totalSales: [
+      { $match: { status: "A" } }, // Filter for status A
+      { $group: { _id: null, total: { $sum: "$amount" } } } // Calculate total sales
+    ],
+    orderCount: [
+      { $match: { status: "A" } }, // Filter for status A
+      { $count: "count" } // Count the number of orders
+    ]
+  }
+}
+
+### 3. Using $facet with Other Stages
+The $facet stage can be used at any point in the pipeline, but it is often used at the end to summarize results. Here’s an example of how it fits into a pipeline:
+Example Pipeline:
+db.orders.aggregate([
+  { $match: { status: "A" } }, // Filter for status A
+  { $facet: {
+      totalSales: [
+        { $group: { _id: null, total: { $sum: "$amount" } } } // Calculate total sales
+      ],
+      orderCount: [
+        { $count: "count" } // Count the number of orders
+      ]
+    }
+  }
+]);
+
+### 4. Performance Considerations
+- **Resource Usage**: Each facet runs independently, which can increase resource usage. Be mindful of the complexity of each pipeline.
+- **Indexing**: Ensure that fields used in the pipelines are indexed to optimize performance. This is especially important in large datasets where filtering or grouping may be involved.
+- **Execution Time**: Since each facet operates independently, if one facet's pipeline is complex or resource-intensive, it may slow down the overall query. 
+
+### 5. Use Cases for $facet
+- **Reporting**: When generating reports that require multiple aggregated metrics from the same dataset.
+- **Data Analysis**: To analyze different aspects of a dataset in a single query, such as calculating totals, averages, and counts simultaneously.
+- **Dashboard Queries**: For applications that display a dashboard with various metrics, using `$facet` can efficiently gather all needed data in one go.
+
+### 6. Combining with Other Aggregation Features
+You can combine `$facet` with stages like `$group`, `$sort`, and `$project` for advanced data manipulation. For example:
+Example:
+db.orders.aggregate([
+  { $match: { date: { $gte: ISODate("2024-01-01") } } }, // Filter orders since 2024
+  { $facet: {
+      totalSales: [
+        { $group: { _id: null, total: { $sum: "$amount" } } },
+        { $project: { _id: 0, total: 1 } }
+      ],
+      averageSale: [
+        { $group: { _id: null, avg: { $avg: "$amount" } } },
+        { $project: { _id: 0, avg: 1 } }
+      ]
+    }
+  }
+]);
+
+### Conclusion
+The $facet stage is a powerful tool for performing multiple aggregations in a single query. It allows you to gather different insights from the same dataset simultaneously, making it easier to analyze complex data. By leveraging `$facet`, you can optimize performance and reduce the number of queries needed to retrieve comprehensive analytics.
+
+
+example:
+# Sample Input Data
+Assuming we have a collection named `orders` with the following documents:
+
+```json
+[
+  { "_id": 1, "customer_id": "C1", "amount": 100, "status": "A", "date": "2024-01-01" },
+  { "_id": 2, "customer_id": "C2", "amount": 150, "status": "A", "date": "2024-01-02" },
+  { "_id": 3, "customer_id": "C1", "amount": 200, "status": "B", "date": "2024-01-03" },
+  { "_id": 4, "customer_id": "C3", "amount": 50, "status": "A", "date": "2024-01-04" },
+  { "_id": 5, "customer_id": "C2", "amount": 75, "status": "A", "date": "2024-01-05" }
+]
+```
+
+## Aggregation Pipeline
+The following aggregation pipeline uses the `$facet` stage to calculate total sales and the number of orders for orders with the status "A":
+
+```javascript
+db.orders.aggregate([
+  { $match: { status: "A" } },
+  { 
+    $facet: {
+      totalSales: [
+        { $group: { _id: null, total: { $sum: "$amount" } } },
+        { $project: { _id: 0, total: 1 } }
+      ],
+      orderCount: [
+        { $count: "count" }
+      ]
+    }
+  }
+]);
+```
+
+## Expected Output
+Given the sample data, the output of the aggregation would be:
+
+```json
+[
+  {
+    "totalSales": [
+      { "total": 325 }
+    ],
+    "orderCount": [
+      { "count": 3 }
+    ]
+  }
+]
+```
+
+## Breakdown of the Output
+- The `totalSales` array contains the total sales amount for orders with status "A", which is 100 + 150 + 50 + 75 = 325.
+- The `orderCount` array contains the count of orders with status "A", which is 3.
+
+## Additional Example
+To calculate the average order amount and the number of unique customers for orders with status "A":
+
+```javascript
+db.orders.aggregate([
+  { $match: { status: "A" } },
+  { 
+    $facet: {
+      averageAmount: [
+        { $group: { _id: null, avgAmount: { $avg: "$amount" } } },
+        { $project: { _id: 0, avgAmount: 1 } }
+      ],
+      uniqueCustomers: [
+        { $group: { _id: "$customer_id" } },
+        { $count: "count" }
+      ]
+    }
+  }
+]);
+```
+
+## Expected Output for the Second Example
+```json
+[
+  {
+    "averageAmount": [
+      { "avgAmount": 108.33 }
+    ],
+    "uniqueCustomers": [
+      { "count": 3 }
+    ]
+  }
+]
+```

@@ -1,0 +1,30 @@
+$limit Stage in MongoDB Aggregation
+
+The $limit stage restricts the number of documents that pass through the aggregation pipeline to a specified number.
+
+1. Basic Syntax
+{ $limit: <number> }
+
+- number: The maximum number of documents to pass to the next stage in the pipeline.
+
+2. Example of Limiting Documents
+To limit the output to the first 5 documents:
+Example:
+{ $limit: 5 } // Passes only the first 5 documents to the next stage
+
+3. Using $limit with Other Stages
+The $limit stage is often used after $sort or $group to restrict the number of results returned. Here’s an example of how it fits into a pipeline:
+Example Pipeline:
+db.orders.aggregate([
+    { $match: { status: "A" } }, // Filter for status A
+    { $group: { _id: "$customer_id", totalAmount: { $sum: "$amount" } } }, // Group by customer_id
+    { $sort: { totalAmount: -1 } }, // Sort by totalAmount descending
+    { $limit: 10 } // Limit to the top 10 customers
+]);
+
+4. Performance Considerations
+- Early Limiting: Placing $limit early in the pipeline can improve performance by reducing the number of documents processed in subsequent stages.
+- Indexing: If used after a $sort stage, ensure that the sorting fields are indexed to optimize performance.
+
+Conclusion
+The $limit stage is a useful tool for controlling the number of documents returned in MongoDB aggregation. It allows you to focus on a specific subset of results, which can be particularly helpful for pagination or when you only need a sample of the data.

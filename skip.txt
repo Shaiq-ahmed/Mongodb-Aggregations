@@ -1,0 +1,30 @@
+$skip Stage in MongoDB Aggregation
+
+The $skip stage skips over a specified number of documents in the aggregation pipeline, allowing you to paginate results.
+
+1. Basic Syntax
+{ $skip: <number> }
+
+- number: The number of documents to skip before passing the remaining documents to the next stage.
+
+2. Example of Skipping Documents
+To skip the first 10 documents:
+Example:
+{ $skip: 10 } // Skips the first 10 documents and passes the rest to the next stage
+
+3. Using $skip with Other Stages
+The $skip stage is often used in conjunction with $limit to implement pagination. Here’s an example of how it fits into a pipeline:
+Example Pipeline:
+db.orders.aggregate([
+    { $match: { status: "A" } }, // Filter for status A
+    { $sort: { totalAmount: -1 } }, // Sort by totalAmount descending
+    { $skip: 10 }, // Skip the first 10 documents
+    { $limit: 5 } // Limit the output to the next 5 documents
+]);
+
+4. Performance Considerations
+- Early Skipping: Placing $skip early in the pipeline can improve performance by reducing the number of documents processed in subsequent stages.
+- Large Skips: Skipping a large number of documents can lead to performance issues, as MongoDB still needs to process all documents up to the skip count. Consider using indexed fields for better performance.
+
+Conclusion
+The $skip stage is a valuable tool for pagination in MongoDB aggregation. It allows you to control which documents are processed in the pipeline, making it easier to retrieve specific subsets of data.

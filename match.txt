@@ -1,0 +1,99 @@
+# MongoDB $match Cheat Sheet
+
+## 1. Equality Operator
+Matches documents where a field equals a specific value.
+{ $match: { status: "A" } }
+
+## 2. Comparison Operators
+- **$gt**: Greater than
+- **$gte**: Greater than or equal to
+- **$lt**: Less than
+- **$lte**: Less than or equal to
+- **$ne**: Not equal
+
+### Example:
+{ $match: { amount: { $gt: 100 } } }
+
+## 3. Logical Operators
+- **$and**: Joins query clauses with a logical AND.
+{ $match: { $and: [{ status: "A" }, { amount: { $gt: 100 } }] } }
+
+- **$or**: Joins query clauses with a logical OR.
+{ $match: { $or: [{ status: "A" }, { status: "B" }] } }
+
+- **$not**: Inverts the effect of a query expression.
+{ $match: { amount: { $not: { $lt: 100 } } } } // Amount NOT less than 100
+
+- **$nor**: Matches documents that fail all conditions (logical NOR).
+{ $match: { $nor: [{ status: "A" }, { amount: { $gt: 100 } }] } }
+
+## 4. Element Operators
+- **$exists**: Matches documents that have or don't have the specified field.
+{ $match: { "field_name": { $exists: true } } } // Field exists
+
+- **$type**: Matches documents where the field is of a specified type.
+{ $match: { "age": { $type: "int" } } } // Matches only if 'age' is an integer
+
+## 5. Regular Expressions
+- **Regex Matching**: Matches documents where a field matches a specified regular expression.
+{ $match: { name: { $regex: /^A/, $options: 'i' } } } // Name starts with 'A', case-insensitive
+
+## 6. Array Operators
+- **$in**: Matches documents where the field’s value is in the specified array.
+{ $match: { status: { $in: ["A", "B"] } } } // Status is either 'A' or 'B'
+
+- **$nin**: Matches documents where the field’s value is not in the specified array.
+{ $match: { status: { $nin: ["C", "D"] } } } // Status is neither 'C' nor 'D'
+
+- **$all**: Matches documents where an array field contains all the specified elements.
+{ $match: { tags: { $all: ["tech", "mongodb"] } } } // Array contains both 'tech' and 'mongodb'
+
+## 7. Field Operators
+- **$size**: Matches documents where an array field is of a specified size.
+{ $match: { tags: { $size: 3 } } } // Array 'tags' has exactly 3 elements
+
+- **$elemMatch**: Matches documents that contain an array field with at least one element that matches all specified conditions.
+{ $match: { scores: { $elemMatch: { $gte: 80, $lt: 90 } } } } // Array 'scores' has at least one element between 80 and 90
+
+## 8. Evaluation Operators
+- **$expr**: Allows the use of aggregation expressions in $match to compare fields or perform calculations.
+{ $match: { $expr: { $gt: ["$spent", "$budget"] } } } // Compares two fields 'spent' and 'budget'
+
+- **$mod**: Selects documents where the value of a field is divisible by a divisor.
+{ $match: { score: { $mod: [4, 0] } } } // 'score' is divisible by 4 with no remainder
+
+## 9. Text Search Operators
+- **$text**: Performs a text search on indexed fields.
+{ $match: { $text: { $search: "mongodb" } } } // Performs text search for the word 'mongodb'
+
+- **$meta**: Can be used with $text to sort documents by text search score.
+{ $match: { $text: { $search: "mongodb" } }, $sort: { score: { $meta: "textScore" } } }
+
+## 10. Geospatial Query Operators
+- **$geoWithin**: Matches documents with geometries that fall within a specified geometry.
+{ $match: { location: { $geoWithin: { $centerSphere: [ [ -73.9667, 40.78 ], 0.01 ] } } } } // Matches documents within a spherical area
+
+- **$near**: Matches documents that are close to a specified point.
+{ $match: { location: { $near: { $geometry: { type: "Point", coordinates: [ -73.9667, 40.78 ] }, $maxDistance: 1000 } } } }
+
+## 11. Time and Date Operators
+- **Date Matching**: Matches documents based on a date range using comparison operators.
+{ $match: { created_at: { $gte: ISODate("2023-01-01T00:00:00Z"), $lt: ISODate("2023-12-31T23:59:59Z") } } }
+
+## 12. Combining $match with Other Stages
+### Example Pipeline:
+db.orders.aggregate([
+    { $match: { status: "A" } }, // Filter documents where status is 'A'
+    { $group: { _id: "$customer_id", totalAmount: { $sum: "$amount" } } }, // Group by customer_id and calculate totalAmount
+    { $sort: { totalAmount: -1 } } // Sort by totalAmount in descending order
+]);
+
+## Summary of Additional $match Features
+- **Comparison Operators**: $eq, $ne, $gt, $gte, $lt, $lte
+- **Logical Operators**: $and, $or, $not, $nor
+- **Array Operators**: $in, $nin, $all, $elemMatch, $size
+- **Evaluation Operators**: $expr, $mod
+- **Text Search Operators**: $text, $meta
+- **Geospatial Operators**: $geoWithin, $near
+- **Field Operators**: $exists, $type
+- **Date Handling**: Use appropriate date comparison operators for date fields.
